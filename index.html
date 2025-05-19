@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nzr Tools</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to nzr Tools</h1>
+            <p class="subtitle">Your all-in-one creative toolkit for AI tools, image processing, and content creation.</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab active" data-category="all">All Tools</button>
+            <button class="tab" data-category="ai">AI Tools</button>
+            <button class="tab" data-category="image">Image Tools</button>
+            <button class="tab" data-category="utility">Utilities</button>
+            <button class="tab" data-category="social">Social Media</button>
+        </nav>
+
+        <div class="search-container">
+            <input type="text" id="searchBox" placeholder="Search tools..." class="search-input">
+            <span class="search-icon">🔍</span>
+        </div>
+
+        <section class="category-section">
+            <div class="category-header">
+                <div class="category-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                        <rect x="9" y="9" width="6" height="6"></rect>
+                        <line x1="9" y1="1" x2="9" y2="4"></line>
+                        <line x1="15" y1="1" x2="15" y2="4"></line>
+                        <line x1="9" y1="20" x2="9" y2="23"></line>
+                        <line x1="15" y1="20" x2="15" y2="23"></line>
+                        <line x1="20" y1="9" x2="23" y2="9"></line>
+                        <line x1="20" y1="14" x2="23" y2="14"></line>
+                        <line x1="1" y1="9" x2="4" y2="9"></line>
+                        <line x1="1" y1="14" x2="4" y2="14"></line>
+                    </svg>
+                </div>
+                <h2>AI Tools</h2>
+            </div>
+
+            <div class="tools-grid">
+                <!-- AI Assistant Card -->
+                <a href="gpt.html" class="category-card" data-category="ai">
+                    <div class="category-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="category-content">
+                        <h3>AI Assistant</h3>
+                        <p>Chat with an intelligent AI powered by GPT-4. Get smart responses and helpful information on any topic.</p>
+                    </div>
+                </a>
+                <!-- More AI tool cards will be added here -->
+                <a href="ai-image.html" class="category-card" data-category="ai">
+                    <div class="category-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="category-content">
+                        <h3>AI Image Generator</h3>
+                        <p>Create stunning images with AI-powered image generation. Generate realistic images based on text prompts.</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
