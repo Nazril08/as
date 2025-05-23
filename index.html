@@ -77,7 +77,7 @@
                             </div>
                         </div>
                         <span id="imageSizeWarning" class="hidden text-xs text-orange-500">
-                            Image is large. Compressing...
+                            Image too large, max 1MB recommended
                         </span>
                         <div class="flex-grow"></div>
                         <button id="addTaskBtn" class="btn-primary">
@@ -91,7 +91,7 @@
                 <button class="category-pill active" data-filter="all">All Tasks</button>
                 <button class="category-pill" data-filter="active">Active</button>
                 <button class="category-pill" data-filter="completed">Completed</button>
-            </div>
+                <button class="category-pill" data-filter="inactive">Inactive</button> </div>
 
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
                 <div class="flex justify-between items-center mb-4">
@@ -211,7 +211,7 @@
                     </div>
                 </div>
                 <span id="editImageSizeWarning" class="hidden text-xs text-orange-500">
-                    Image is large. Compressing...
+                    Image too large, max 1MB recommended
                 </span>
             </div>
             <div class="flex justify-end space-x-2 mt-6">
@@ -236,7 +236,7 @@
             const completedTasksEl = document.getElementById('completedTasks');
             const categoryPills = document.querySelectorAll('.category-pill');
             
-            // Modal Elements
+            // Modal Elements (same as before)
             const taskModal = document.getElementById('taskModal');
             const modalTitle = document.getElementById('modalTitle');
             const viewMode = document.getElementById('viewMode');
@@ -259,14 +259,8 @@
             let currentFilter = 'all';
             let tasks = [];
             let currentEditTaskId = null; // To store the ID of the task being edited
-            let currentAddTaskImageBase64 = null; // Store image data for add task
-            let currentEditTaskImageBase64 = null; // To store image data during edit
-
-            // --- Configuration for Image Compression ---
-            const MAX_IMAGE_SIZE_BYTES = 7 * 1024 * 1024; // 7 MB
-            const TARGET_COMPRESSED_SIZE_BYTES = 5 * 1024 * 1024; // Try to compress to ~5 MB
-            const MAX_IMAGE_DIMENSION = 1920; // Max width or height for resized image
-            const JPEG_QUALITY = 0.8; // Initial JPEG quality for compression
+            let currentAddTaskImageBase64 = null; // For image data on add form
+            let currentEditTaskImageBase64 = null; // For image data on edit modal
 
             // Initialize: Load tasks from localStorage
             function loadTasks() {
@@ -282,70 +276,16 @@
                 updateStats();
             }
 
-            // --- Image Compression Utility Function ---
-            function compressImage(file, callback, errorCallback) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-
-                        let width = img.width;
-                        let height = img.height;
-
-                        // Calculate new dimensions to fit MAX_IMAGE_DIMENSION
-                        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
-                            if (width > height) {
-                                height *= MAX_IMAGE_DIMENSION / width;
-                                width = MAX_IMAGE_DIMENSION;
-                            } else {
-                                width *= MAX_IMAGE_DIMENSION / height;
-                                height = MAX_IMAGE_DIMENSION;
-                            }
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        // Try to get data URL with specified quality
-                        let compressedDataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-                        let currentQuality = JPEG_QUALITY;
-
-                        // If still too big, try reducing quality iteratively
-                        while (compressedDataUrl.length > TARGET_COMPRESSED_SIZE_BYTES && currentQuality > 0.1) {
-                            currentQuality -= 0.1; // Reduce quality by 0.1
-                            compressedDataUrl = canvas.toDataURL('image/jpeg', currentQuality);
-                        }
-                        
-                        // Check final size, if still too large, return error or handle
-                        if (compressedDataUrl.length > MAX_IMAGE_SIZE_BYTES) {
-                            errorCallback("Image is still too large after compression (exceeds " + (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toFixed(1) + " MB)");
-                        } else {
-                            callback(compressedDataUrl);
-                        }
-
-                    };
-                    img.onerror = function() {
-                        errorCallback("Could not load image.");
-                    };
-                    img.src = event.target.result;
-                };
-                reader.onerror = function() {
-                    errorCallback("Could not read file.");
-                };
-                reader.readAsDataURL(file);
-            }
-
             // Create a task element
             function createTaskElement(task) {
                 const taskEl = document.createElement('div');
                 taskEl.classList.add('flex', 'items-center', 'p-3', 'border', 'border-gray-200', 'rounded-lg', 'group', 'transition-all');
                 
+                // Add conditional classes for completed and inactive tasks
                 if (task.completed) {
                     taskEl.classList.add('bg-gray-50');
+                } else if (task.inactive) { // NEW: Inactive styling
+                    taskEl.classList.add('bg-gray-100', 'opacity-70', 'border-gray-300'); // Slightly dimmer, different border
                 } else {
                     taskEl.classList.add('bg-white');
                 }
@@ -364,9 +304,9 @@
                         <div class="flex items-start space-x-3">
                             ${task.image ? `<img src="${task.image}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">` : ''}
                             <div class="w-full">
-                                <p class="text-gray-800 ${task.completed ? 'line-through text-gray-500' : ''} font-medium">${task.text}</p>
+                                <p class="text-gray-800 ${task.completed ? 'line-through text-gray-500' : ''} ${task.inactive ? 'text-gray-500' : ''} font-medium">${task.text}</p>
                                 ${task.description ? `
-                                <div class="text-sm text-gray-600 mt-1 ${task.completed ? 'line-through text-gray-400' : ''}">
+                                <div class="text-sm text-gray-600 mt-1 ${task.completed ? 'line-through text-gray-400' : ''} ${task.inactive ? 'text-gray-400' : ''}">
                                     ${task.description.replace(/\n/g, '<br>')}
                                 </div>` : ''}
                                 <p class="text-xs text-gray-400 mt-1">${formatDate(task.createdAt)}</p>
@@ -377,6 +317,10 @@
                         <button class="view-edit-task text-gray-400 hover:text-blue-500">
                             <i class="fas fa-eye"></i>
                         </button>
+                        ${!task.completed ? ` <button class="toggle-inactive-task text-gray-400 ${task.inactive ? 'hover:text-green-500' : 'hover:text-yellow-500'}">
+                            <i class="fas ${task.inactive ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
+                        </button>
+                        ` : ''}
                         <button class="delete-task text-gray-400 hover:text-red-500">
                             <i class="fas fa-trash-alt"></i>
                         </button>
@@ -392,12 +336,21 @@
                     openTaskModal(task.id);
                 });
 
+                // NEW: Event listener for toggle inactive
+                const toggleInactiveBtn = taskEl.querySelector('.toggle-inactive-task');
+                if (toggleInactiveBtn) { // Check if button exists (it won't if task is completed)
+                    toggleInactiveBtn.addEventListener('click', function() {
+                        toggleInactive(task.id);
+                    });
+                }
+
+
                 taskEl.querySelector('.delete-task').addEventListener('click', function() {
                     deleteTask(task.id);
                 });
 
                 // Add data attribute for filtering
-                taskEl.dataset.status = task.completed ? 'completed' : 'active';
+                taskEl.dataset.status = task.completed ? 'completed' : (task.inactive ? 'inactive' : 'active'); // NEW: Status for inactive
                 
                 return taskEl;
             }
@@ -411,12 +364,13 @@
                 } else {
                     emptyState.classList.add('hidden');
                     
-                    const filteredTasks = currentFilter === 'all' 
-                        ? tasks 
-                        : tasks.filter(task => 
-                            (currentFilter === 'completed' && task.completed) || 
-                            (currentFilter === 'active' && !task.completed)
-                        );
+                    const filteredTasks = tasks.filter(task => { // NEW: Filtering logic for inactive
+                        if (currentFilter === 'all') return true;
+                        if (currentFilter === 'completed') return task.completed;
+                        if (currentFilter === 'active') return !task.completed && !task.inactive; // Active = NOT completed AND NOT inactive
+                        if (currentFilter === 'inactive') return task.inactive; // Only inactive tasks
+                        return false;
+                    });
                     
                     if (filteredTasks.length === 0) {
                         const noMatchEl = document.createElement('div');
@@ -442,8 +396,9 @@
                         text: text,
                         description: description || null,
                         completed: false,
+                        inactive: false, // NEW: Default to not inactive
                         createdAt: new Date(),
-                        image: currentAddTaskImageBase64 // Use the compressed image data
+                        image: currentAddTaskImageBase64 // Use the image data
                     };
                     
                     tasks.unshift(newTask); // Add to beginning of array
@@ -457,7 +412,11 @@
             function toggleTask(id) {
                 tasks = tasks.map(task => {
                     if (task.id === id) {
-                        return { ...task, completed: !task.completed };
+                        return { 
+                            ...task, 
+                            completed: !task.completed,
+                            inactive: false // NEW: Completing a task makes it active
+                        };
                     }
                     return task;
                 });
@@ -466,7 +425,23 @@
                 renderTasks();
             }
 
-            // Delete a task
+            // NEW: Toggle inactive status
+            function toggleInactive(id) {
+                tasks = tasks.map(task => {
+                    if (task.id === id) {
+                        return { 
+                            ...task, 
+                            inactive: !task.inactive,
+                            completed: false // NEW: Making inactive also makes it not completed
+                        };
+                    }
+                    return task;
+                });
+                saveTasks();
+                renderTasks();
+            }
+
+            // Delete a task (same as before)
             function deleteTask(id) {
                 if (confirm('Are you sure you want to delete this task?')) {
                     tasks = tasks.filter(task => task.id !== id);
@@ -475,7 +450,7 @@
                 }
             }
 
-            // Clear completed tasks
+            // Clear completed tasks (same as before)
             function clearCompleted() {
                 if (confirm('Are you sure you want to remove all completed tasks?')) {
                     tasks = tasks.filter(task => !task.completed);
@@ -484,46 +459,45 @@
                 }
             }
 
-            // Update task statistics
+            // Update task statistics (modified for inactive)
             function updateStats() {
                 const completed = tasks.filter(task => task.completed).length;
-                const active = tasks.length - completed;
+                const active = tasks.filter(task => !task.completed && !task.inactive).length; // Only truly active tasks
+                const inactive = tasks.filter(task => task.inactive).length; // Count inactive tasks
+                const total = tasks.length;
                 
-                totalTasksEl.textContent = tasks.length;
+                totalTasksEl.textContent = total;
                 activeTasksEl.textContent = active;
                 completedTasksEl.textContent = completed;
+                // No specific element for inactive count, but you could add one if desired.
             }
 
-            // Format date for display
+            // Format date for display (same as before)
             function formatDate(date) {
                 const d = new Date(date);
                 const now = new Date();
                 
-                // If today, show time
                 if (d.toDateString() === now.toDateString()) {
                     return `Today at ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
                 }
                 
-                // If yesterday
                 const yesterday = new Date();
                 yesterday.setDate(now.getDate() - 1);
                 if (d.toDateString() === yesterday.toDateString()) {
                     return 'Yesterday';
                 }
                 
-                // Otherwise show date
                 return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
             }
 
-            // Reset the task form
+            // Reset the task form (same as before)
             function resetTaskForm() {
                 taskInput.value = '';
                 taskDescription.value = '';
                 resetImageUpload();
-                currentAddTaskImageBase64 = null; // Clear image data for next add
             }
 
-            // --- Modal Functions ---
+            // --- Modal Functions (mostly same, minor adjustment for inactive) ---
             function openTaskModal(id) {
                 currentEditTaskId = id;
                 const task = tasks.find(t => t.id === id);
@@ -537,55 +511,52 @@
                     viewTaskImage.classList.remove('hidden');
                 } else {
                     viewTaskImage.classList.add('hidden');
-                    viewTaskImage.src = ''; // Clear src
+                    viewTaskImage.src = '';
                 }
                 viewTaskCreatedAt.textContent = `Created: ${formatDate(task.createdAt)}`;
 
                 // Set Edit Mode content (hidden by default)
                 editTaskInput.value = task.text;
                 editTaskDescription.value = task.description || '';
-                currentEditTaskImageBase64 = task.image; // Store current image
+                currentEditTaskImageBase64 = task.image;
                 if (task.image) {
                     editPreviewImg.src = task.image;
                     editImagePreview.classList.remove('hidden');
                 } else {
                     editImagePreview.classList.add('hidden');
-                    editPreviewImg.src = ''; // Clear src
+                    editPreviewImg.src = '';
                 }
-                editImageSizeWarning.classList.add('hidden'); // Hide warning initially
+                editImageSizeWarning.classList.add('hidden');
 
-                // Show View Mode, hide Edit Mode
                 modalTitle.textContent = 'View Task';
                 viewMode.classList.remove('hidden');
                 editMode.classList.add('hidden');
-                editToggleBtn.classList.remove('hidden'); // Show Edit button
-                saveEditBtn.classList.add('hidden'); // Hide Save button
+                editToggleBtn.classList.remove('hidden');
+                saveEditBtn.classList.add('hidden');
                 taskModal.classList.remove('hidden');
             }
 
             function closeTaskModal() {
                 taskModal.classList.add('hidden');
                 currentEditTaskId = null;
-                currentAddTaskImageBase64 = null; // Clear image data on close
-                currentEditTaskImageBase64 = null; // Clear image data on close
-                resetEditImageUpload(); // Reset image inputs for next use
+                currentAddTaskImageBase64 = null; 
+                currentEditTaskImageBase64 = null; 
+                resetImageUpload(); // Resets both add and edit form image previews
             }
 
             function toggleEditMode() {
                 if (editMode.classList.contains('hidden')) {
-                    // Switch to Edit Mode
                     modalTitle.textContent = 'Edit Task';
                     viewMode.classList.add('hidden');
                     editMode.classList.remove('hidden');
-                    editToggleBtn.textContent = 'View'; // Change button text
-                    saveEditBtn.classList.remove('hidden'); // Show Save button
+                    editToggleBtn.textContent = 'View';
+                    saveEditBtn.classList.remove('hidden');
                 } else {
-                    // Switch to View Mode
                     modalTitle.textContent = 'View Task';
                     viewMode.classList.remove('hidden');
                     editMode.classList.add('hidden');
-                    editToggleBtn.textContent = 'Edit'; // Change button text
-                    saveEditBtn.classList.add('hidden'); // Hide Save button
+                    editToggleBtn.textContent = 'Edit';
+                    saveEditBtn.classList.add('hidden');
                 }
             }
 
@@ -604,7 +575,7 @@
                             ...task, 
                             text: editedText, 
                             description: editedDescription || null,
-                            image: currentEditTaskImageBase64 // Use the current image data (potentially compressed)
+                            image: currentEditTaskImageBase64 
                         };
                     }
                     return task;
@@ -615,7 +586,7 @@
                 closeTaskModal();
             }
             
-            // --- Image Upload Handling (for Add Task) ---
+            // --- Image Upload Handling (reverted to original, non-compression) ---
             const taskImage = document.getElementById('taskImage');
             const imagePreview = document.getElementById('imagePreview');
             const previewImg = document.getElementById('previewImg');
@@ -625,35 +596,24 @@
             taskImage.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                    if (file.size > 1024 * 1024) { // 1MB limit for warning
                         imageSizeWarning.classList.remove('hidden');
-                        imageSizeWarning.textContent = "Image is too large (>" + (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toFixed(1) + "MB). Compressing...";
-                        
-                        compressImage(file, function(compressedBase64) {
-                            previewImg.src = compressedBase64;
-                            imagePreview.classList.remove('hidden');
-                            currentAddTaskImageBase64 = compressedBase64;
-                            imageSizeWarning.classList.add('hidden'); // Hide warning on successful compression
-                        }, function(errorMsg) {
-                            imageSizeWarning.textContent = "Error compressing image: " + errorMsg;
-                            imageSizeWarning.classList.remove('hidden');
-                            resetImageUpload();
-                        });
                     } else {
                         imageSizeWarning.classList.add('hidden');
-                        const reader = new FileReader();
-                        reader.onload = function(event) {
-                            previewImg.src = event.target.result;
-                            imagePreview.classList.remove('hidden');
-                            currentAddTaskImageBase64 = event.target.result; // Store original if small enough
-                        };
-                        reader.readAsDataURL(file);
                     }
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        previewImg.src = event.target.result;
+                        imagePreview.classList.remove('hidden');
+                        currentAddTaskImageBase64 = event.target.result; // Store base64 data
+                    };
+                    reader.readAsDataURL(file);
                 }
             });
             removeImageBtn.addEventListener('click', function() {
                 resetImageUpload();
             });
+            // This function handles resetting the main add task image input/preview
             function resetImageUpload() {
                 taskImage.value = '';
                 previewImg.src = '';
@@ -662,39 +622,34 @@
                 currentAddTaskImageBase64 = null;
             }
 
-            // --- Image Upload Handling (for Edit Task Modal) ---
+            // --- Image Upload Handling (for Edit Task Modal, reverted to original) ---
+            const editTaskImage = document.getElementById('editTaskImage');
+            const editImagePreview = document.getElementById('editImagePreview');
+            const editPreviewImg = document.getElementById('editPreviewImg');
+            const editRemoveImageBtn = document.getElementById('editRemoveImageBtn');
+            const editImageSizeWarning = document.getElementById('editImageSizeWarning');
+
             editTaskImage.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                    if (file.size > 1024 * 1024) { // 1MB limit for warning
                         editImageSizeWarning.classList.remove('hidden');
-                        editImageSizeWarning.textContent = "Image is too large (>" + (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toFixed(1) + "MB). Compressing...";
-                        
-                        compressImage(file, function(compressedBase64) {
-                            editPreviewImg.src = compressedBase64;
-                            editImagePreview.classList.remove('hidden');
-                            currentEditTaskImageBase64 = compressedBase64;
-                            editImageSizeWarning.classList.add('hidden'); // Hide warning on successful compression
-                        }, function(errorMsg) {
-                            editImageSizeWarning.textContent = "Error compressing image: " + errorMsg;
-                            editImageSizeWarning.classList.remove('hidden');
-                            resetEditImageUpload();
-                        });
                     } else {
                         editImageSizeWarning.classList.add('hidden');
-                        const reader = new FileReader();
-                        reader.onload = function(event) {
-                            editPreviewImg.src = event.target.result;
-                            editImagePreview.classList.remove('hidden');
-                            currentEditTaskImageBase64 = event.target.result; // Store original if small enough
-                        };
-                        reader.readAsDataURL(file);
                     }
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        editPreviewImg.src = event.target.result;
+                        editImagePreview.classList.remove('hidden');
+                        currentEditTaskImageBase64 = event.target.result; // Store base64 data
+                    };
+                    reader.readAsDataURL(file);
                 }
             });
             editRemoveImageBtn.addEventListener('click', function() {
                 resetEditImageUpload();
             });
+            // This function handles resetting the edit modal image input/preview
             function resetEditImageUpload() {
                 editTaskImage.value = '';
                 editPreviewImg.src = '';
@@ -702,6 +657,7 @@
                 editImageSizeWarning.classList.add('hidden');
                 currentEditTaskImageBase64 = null;
             }
+
 
             // --- Event Listeners ---
             addTaskBtn.addEventListener('click', addTask);
@@ -750,4 +706,4 @@
         });
     </script>
 </body>
-    </html>
+</html>
