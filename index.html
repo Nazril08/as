@@ -3,13 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To-Do List - nzr Tools</title>
+    <title>Money Tracker - nzr Tools</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="../../style.css" rel="stylesheet">
+    <link href="../../style.css" rel="stylesheet"> 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the new features or overrides */
+        .tab-button {
+            @apply px-4 py-2 text-sm font-medium rounded-lg transition-colors;
+        }
+        .tab-button.active {
+            @apply bg-indigo-600 text-white;
+        }
+        .tab-button:not(.active) {
+            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
+        }
+        .wallet-item {
+            @apply bg-gray-50 p-4 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors;
+        }
+        .transaction-item {
+            @apply flex justify-between items-center p-3 border-b border-gray-100 last:border-b-0;
+        }
+        .transaction-item.income .amount {
+            @apply text-green-600;
+        }
+        .transaction-item.expense .amount {
+            @apply text-red-600;
+        }
+        .modal-overlay {
+            @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50;
+        }
+        .modal-content {
+            @apply bg-white rounded-xl shadow-xl w-full max-w-md p-6;
+        }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-jakarta">
     <nav class="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/70 border-b border-gray-200">
@@ -37,10 +67,10 @@
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-8">
                 <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    To-Do <span class="text-indigo-600">List</span>
+                    Money <span class="text-indigo-600">Tracker</span>
                 </h1>
                 <p class="text-lg text-gray-600">
-                    Manage your tasks efficiently. Your tasks are saved locally in your browser.
+                    Track your income, expenses, and manage your wallets efficiently.
                 </p>
                 <a href="../../index.html" class="inline-flex items-center mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,81 +81,73 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <div class="flex flex-col space-y-4">
-                    <input type="text" id="taskInput" placeholder="Add a new task..." 
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
-                    
-                    <textarea id="taskDescription" placeholder="Add description (optional)..." 
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base resize-y min-h-[80px]"></textarea>
-                    
-                    <div class="flex items-center space-x-2">
-                        <label for="taskImage" class="flex items-center cursor-pointer p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            Add Image
-                        </label>
-                        <input type="file" id="taskImage" accept="image/*" class="hidden">
-                        <div id="imagePreview" class="hidden">
-                            <div class="relative">
-                                <img id="previewImg" class="h-12 w-12 object-cover rounded-md" src="">
-                                <button id="removeImageBtn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                    </svg>
-                                </button>
-                            </div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Your Wallets</h2>
+                <div id="walletList" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="wallet-item flex justify-between items-center" data-wallet-id="default">
+                        <div>
+                            <p class="font-medium text-gray-700">Cash Wallet</p>
+                            <p class="text-sm text-gray-500">Main cash transactions</p>
                         </div>
-                        <span id="imageSizeWarning" class="hidden text-xs text-orange-500">
-                            Image too large, max 1MB recommended
-                        </span>
-                        <div class="flex-grow"></div>
-                        <button id="addTaskBtn" class="btn-primary">
-                            Add Task
-                        </button>
+                        <p class="text-lg font-bold text-gray-800" id="defaultWalletBalance">Rp0</p>
                     </div>
                 </div>
+                <button id="addWalletBtn" class="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                    <i class="fas fa-plus mr-2"></i> Add New Wallet
+                </button>
             </div>
 
-            <div class="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
-                <button class="category-pill active" data-filter="all">All Tasks</button>
-                <button class="category-pill" data-filter="active">Active</button>
-                <button class="category-pill" data-filter="completed">Completed</button>
-                <button class="category-pill" data-filter="inactive">Inactive</button> </div>
+            <div class="flex justify-center gap-2 md:gap-3 mb-6">
+                <button class="tab-button active" data-tab="transactions">Transactions</button>
+                <button class="tab-button" data-tab="wallets">Wallets Overview</button>
+            </div>
 
-            <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-semibold text-gray-800">Your Tasks</h2>
-                    <button id="clearCompletedBtn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
-                        Clear Completed
+            <div id="transactionsSection" class="bg-white rounded-xl shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Add New Transaction</h2>
+                <div class="flex flex-col space-y-4 mb-4">
+                    <div class="flex space-x-2">
+                        <button id="incomeTypeBtn" class="tab-button active" data-type="income">Income</button>
+                        <button id="expenseTypeBtn" class="tab-button" data-type="expense">Expense</button>
+                    </div>
+                    <input type="number" id="transactionAmount" placeholder="Amount (e.g., 50000)" 
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
+                    <input type="text" id="transactionDescription" placeholder="Description (e.g., Lunch, Salary)" 
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
+                    <select id="transactionWallet" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
+                        <option value="default">Cash Wallet</option>
+                    </select>
+                    <button id="addTransactionBtn" class="btn-primary">
+                        Add Transaction
                     </button>
                 </div>
 
-                <div id="taskList" class="space-y-3">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 mt-6">Recent Transactions</h2>
+                <div id="transactionList" class="space-y-2">
+                    <div id="emptyTransactionState" class="text-center py-8 text-gray-500">
+                        No transactions yet.
                     </div>
-
-                <div id="emptyState" class="hidden text-center py-8">
-                    <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                    </svg>
-                    <p class="text-gray-500">No tasks yet. Add your first task above.</p>
                 </div>
             </div>
 
+            <div id="walletsSection" class="bg-white rounded-xl shadow-md p-6 mb-8 hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Manage Wallets</h2>
+                <div id="fullWalletList" class="space-y-4">
+                    </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Overall Summary</h2>
                 <div class="grid grid-cols-3 gap-4 text-center">
                     <div>
-                        <p class="text-gray-500 text-sm">Total Tasks</p>
-                        <p id="totalTasks" class="text-2xl font-bold text-gray-800">0</p>
+                        <p class="text-gray-500 text-sm">Total Income</p>
+                        <p id="totalIncome" class="text-2xl font-bold text-green-600">Rp0</p>
                     </div>
                     <div>
-                        <p class="text-gray-500 text-sm">Active</p>
-                        <p id="activeTasks" class="text-2xl font-bold text-indigo-600">0</p>
+                        <p class="text-gray-500 text-sm">Total Expense</p>
+                        <p id="totalExpense" class="text-2xl font-bold text-red-600">Rp0</p>
                     </div>
                     <div>
-                        <p class="text-gray-500 text-sm">Completed</p>
-                        <p id="completedTasks" class="text-2xl font-bold text-green-600">0</p>
+                        <p class="text-gray-500 text-sm">Net Balance</p>
+                        <p id="netBalance" class="text-2xl font-bold text-gray-800">Rp0</p>
                     </div>
                 </div>
             </div>
@@ -181,43 +203,20 @@
         </svg>
     </a>
 
-    <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4" id="modalTitle">View Task</h2>
-            <div id="viewMode" class="space-y-3">
-                <p class="text-lg font-semibold text-gray-800" id="viewTaskText"></p>
-                <div class="text-sm text-gray-600" id="viewTaskDescription"></div>
-                <img id="viewTaskImage" class="w-full h-48 object-cover rounded-md mt-2 hidden" src="">
-                <p class="text-xs text-gray-400 mt-2" id="viewTaskCreatedAt"></p>
-            </div>
-            <div id="editMode" class="space-y-4 hidden">
-                <input type="text" id="editTaskInput" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
-                <textarea id="editTaskDescription" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base resize-y min-h-[80px]"></textarea>
-                <label for="editTaskImage" class="flex items-center cursor-pointer p-2 text-gray-600 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    Change Image
-                </label>
-                <input type="file" id="editTaskImage" accept="image/*" class="hidden">
-                <div id="editImagePreview" class="hidden">
-                    <div class="relative">
-                        <img id="editPreviewImg" class="h-12 w-12 object-cover rounded-md" src="">
-                        <button id="editRemoveImageBtn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <span id="editImageSizeWarning" class="hidden text-xs text-orange-500">
-                    Image too large, max 1MB recommended
-                </span>
+    <div id="walletModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4" id="walletModalTitle">Add New Wallet</h2>
+            <div class="space-y-4">
+                <input type="text" id="walletNameInput" placeholder="Wallet Name (e.g., Bank Account, Cash)" 
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
+                <input type="number" id="walletInitialBalanceInput" placeholder="Initial Balance (optional)" 
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base">
+                <textarea id="walletDescriptionInput" placeholder="Description (optional)" 
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-base resize-y min-h-[60px]"></textarea>
             </div>
             <div class="flex justify-end space-x-2 mt-6">
-                <button id="cancelModalBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
-                <button id="editToggleBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">Edit</button>
-                <button id="saveEditBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors hidden">Save</button>
+                <button id="cancelWalletModalBtn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">Cancel</button>
+                <button id="saveWalletBtn" class="btn-primary">Save Wallet</button>
             </div>
         </div>
     </div>
@@ -225,469 +224,389 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // DOM Elements
-            const taskInput = document.getElementById('taskInput');
-            const taskDescription = document.getElementById('taskDescription');
-            const addTaskBtn = document.getElementById('addTaskBtn');
-            const taskList = document.getElementById('taskList');
-            const emptyState = document.getElementById('emptyState');
-            const clearCompletedBtn = document.getElementById('clearCompletedBtn');
-            const totalTasksEl = document.getElementById('totalTasks');
-            const activeTasksEl = document.getElementById('activeTasks');
-            const completedTasksEl = document.getElementById('completedTasks');
-            const categoryPills = document.querySelectorAll('.category-pill');
+            const walletList = document.getElementById('walletList');
+            const addWalletBtn = document.getElementById('addWalletBtn');
+            const defaultWalletBalanceEl = document.getElementById('defaultWalletBalance');
+
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const transactionsSection = document.getElementById('transactionsSection');
+            const walletsSection = document.getElementById('walletsSection');
+
+            const incomeTypeBtn = document.getElementById('incomeTypeBtn');
+            const expenseTypeBtn = document.getElementById('expenseTypeBtn');
+            const transactionAmountInput = document.getElementById('transactionAmount');
+            const transactionDescriptionInput = document.getElementById('transactionDescription');
+            const transactionWalletSelect = document.getElementById('transactionWallet');
+            const addTransactionBtn = document.getElementById('addTransactionBtn');
+            const transactionList = document.getElementById('transactionList');
+            const emptyTransactionState = document.getElementById('emptyTransactionState');
             
-            // Modal Elements (same as before)
-            const taskModal = document.getElementById('taskModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const viewMode = document.getElementById('viewMode');
-            const viewTaskText = document.getElementById('viewTaskText');
-            const viewTaskDescription = document.getElementById('viewTaskDescription');
-            const viewTaskImage = document.getElementById('viewTaskImage');
-            const viewTaskCreatedAt = document.getElementById('viewTaskCreatedAt');
-            const editMode = document.getElementById('editMode');
-            const editTaskInput = document.getElementById('editTaskInput');
-            const editTaskDescription = document.getElementById('editTaskDescription');
-            const editTaskImage = document.getElementById('editTaskImage');
-            const editImagePreview = document.getElementById('editImagePreview');
-            const editPreviewImg = document.getElementById('editPreviewImg');
-            const editRemoveImageBtn = document.getElementById('editRemoveImageBtn');
-            const editImageSizeWarning = document.getElementById('editImageSizeWarning');
-            const cancelModalBtn = document.getElementById('cancelModalBtn');
-            const editToggleBtn = document.getElementById('editToggleBtn');
-            const saveEditBtn = document.getElementById('saveEditBtn');
+            const fullWalletList = document.getElementById('fullWalletList');
+
+            const totalIncomeEl = document.getElementById('totalIncome');
+            const totalExpenseEl = document.getElementById('totalExpense');
+            const netBalanceEl = document.getElementById('netBalance');
+
+            // Wallet Modal Elements
+            const walletModal = document.getElementById('walletModal');
+            const walletModalTitle = document.getElementById('walletModalTitle');
+            const walletNameInput = document.getElementById('walletNameInput');
+            const walletInitialBalanceInput = document.getElementById('walletInitialBalanceInput');
+            const walletDescriptionInput = document.getElementById('walletDescriptionInput');
+            const cancelWalletModalBtn = document.getElementById('cancelWalletModalBtn');
+            const saveWalletBtn = document.getElementById('saveWalletBtn');
             
-            let currentFilter = 'all';
-            let tasks = [];
-            let currentEditTaskId = null; // To store the ID of the task being edited
-            let currentAddTaskImageBase64 = null; // For image data on add form
-            let currentEditTaskImageBase64 = null; // For image data on edit modal
+            let wallets = [];
+            let transactions = [];
+            let currentTransactionType = 'income'; // 'income' or 'expense'
+            let editingWalletId = null; // null for add, ID for edit
 
-            // Initialize: Load tasks from localStorage
-            function loadTasks() {
-                const storedTasks = localStorage.getItem('nzrTodoTasks');
-                tasks = storedTasks ? JSON.parse(storedTasks) : [];
-                renderTasks();
-                updateStats();
-            }
-
-            // Save tasks to localStorage
-            function saveTasks() {
-                localStorage.setItem('nzrTodoTasks', JSON.stringify(tasks));
-                updateStats();
-            }
-
-            // Create a task element
-            function createTaskElement(task) {
-                const taskEl = document.createElement('div');
-                taskEl.classList.add('flex', 'items-center', 'p-3', 'border', 'border-gray-200', 'rounded-lg', 'group', 'transition-all');
+            // --- Initialization ---
+            function loadData() {
+                const storedWallets = localStorage.getItem('nzrMoneyTrackerWallets');
+                const storedTransactions = localStorage.getItem('nzrMoneyTrackerTransactions');
                 
-                // Add conditional classes for completed and inactive tasks
-                if (task.completed) {
-                    taskEl.classList.add('bg-gray-50');
-                } else if (task.inactive) { // NEW: Inactive styling
-                    taskEl.classList.add('bg-gray-100', 'opacity-70', 'border-gray-300'); // Slightly dimmer, different border
-                } else {
-                    taskEl.classList.add('bg-white');
-                }
+                wallets = storedWallets ? JSON.parse(storedWallets) : [
+                    { id: 'default', name: 'Cash Wallet', description: 'Main cash transactions', balance: 0 }
+                ];
+                transactions = storedTransactions ? JSON.parse(storedTransactions) : [];
 
-                taskEl.innerHTML = `
-                    <div class="flex-shrink-0 mr-3">
-                        <button class="toggle-task w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            task.completed 
-                                ? 'border-green-500 bg-green-500 text-white' 
-                                : 'border-gray-300 hover:border-indigo-500'
-                        }">
-                            ${task.completed ? '<i class="fas fa-check text-xs"></i>' : ''}
-                        </button>
-                    </div>
-                    <div class="flex-grow">
-                        <div class="flex items-start space-x-3">
-                            ${task.image ? `<img src="${task.image}" class="w-12 h-12 object-cover rounded-md flex-shrink-0">` : ''}
-                            <div class="w-full">
-                                <p class="text-gray-800 ${task.completed ? 'line-through text-gray-500' : ''} ${task.inactive ? 'text-gray-500' : ''} font-medium">${task.text}</p>
-                                ${task.description ? `
-                                <div class="text-sm text-gray-600 mt-1 ${task.completed ? 'line-through text-gray-400' : ''} ${task.inactive ? 'text-gray-400' : ''}">
-                                    ${task.description.replace(/\n/g, '<br>')}
-                                </div>` : ''}
-                                <p class="text-xs text-gray-400 mt-1">${formatDate(task.createdAt)}</p>
+                renderWallets();
+                renderTransactions();
+                updateOverallSummary();
+                populateWalletSelect();
+            }
+
+            function saveData() {
+                localStorage.setItem('nzrMoneyTrackerWallets', JSON.stringify(wallets));
+                localStorage.setItem('nzrMoneyTrackerTransactions', JSON.stringify(transactions));
+                updateOverallSummary();
+            }
+
+            // --- Wallet Functions ---
+            function renderWallets() {
+                walletList.innerHTML = '';
+                fullWalletList.innerHTML = ''; // For detailed list
+
+                if (wallets.length === 0) {
+                    walletList.innerHTML = '<p class="text-gray-500 text-center">No wallets yet. Add one!</p>';
+                } else {
+                    wallets.forEach(wallet => {
+                        // Summary List
+                        const summaryItem = document.createElement('div');
+                        summaryItem.classList.add('wallet-item', 'flex', 'justify-between', 'items-center');
+                        summaryItem.dataset.walletId = wallet.id;
+                        summaryItem.innerHTML = `
+                            <div>
+                                <p class="font-medium text-gray-700">${wallet.name}</p>
+                                <p class="text-sm text-gray-500">${wallet.description || 'No description'}</p>
                             </div>
-                        </div>
-                    </div>
-                    <div class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
-                        <button class="view-edit-task text-gray-400 hover:text-blue-500">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        ${!task.completed ? ` <button class="toggle-inactive-task text-gray-400 ${task.inactive ? 'hover:text-green-500' : 'hover:text-yellow-500'}">
-                            <i class="fas ${task.inactive ? 'fa-check-circle' : 'fa-minus-circle'}"></i>
-                        </button>
-                        ` : ''}
-                        <button class="delete-task text-gray-400 hover:text-red-500">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                `;
+                            <p class="text-lg font-bold text-gray-800">${formatCurrency(wallet.balance)}</p>
+                        `;
+                        summaryItem.addEventListener('click', () => openWalletModal(wallet.id));
+                        walletList.appendChild(summaryItem);
 
-                // Add event listeners to the elements inside the task
-                taskEl.querySelector('.toggle-task').addEventListener('click', function() {
-                    toggleTask(task.id);
-                });
-
-                taskEl.querySelector('.view-edit-task').addEventListener('click', function() {
-                    openTaskModal(task.id);
-                });
-
-                // NEW: Event listener for toggle inactive
-                const toggleInactiveBtn = taskEl.querySelector('.toggle-inactive-task');
-                if (toggleInactiveBtn) { // Check if button exists (it won't if task is completed)
-                    toggleInactiveBtn.addEventListener('click', function() {
-                        toggleInactive(task.id);
+                        // Detailed List (for Wallets Overview tab)
+                        const detailItem = document.createElement('div');
+                        detailItem.classList.add('bg-gray-50', 'p-4', 'rounded-lg', 'border', 'border-gray-200');
+                        detailItem.innerHTML = `
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-semibold text-gray-800">${wallet.name}</h3>
+                                <div class="flex space-x-2">
+                                    <button class="text-blue-500 hover:text-blue-700 edit-wallet-btn" data-id="${wallet.id}"><i class="fas fa-edit"></i></button>
+                                    <button class="text-red-500 hover:text-red-700 delete-wallet-btn" data-id="${wallet.id}"><i class="fas fa-trash-alt"></i></button>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-2">${wallet.description || 'No description'}</p>
+                            <p class="text-lg font-bold text-gray-800">Balance: ${formatCurrency(wallet.balance)}</p>
+                        `;
+                        fullWalletList.appendChild(detailItem);
                     });
                 }
-
-
-                taskEl.querySelector('.delete-task').addEventListener('click', function() {
-                    deleteTask(task.id);
+                
+                // Add event listeners for detailed wallet list buttons
+                fullWalletList.querySelectorAll('.edit-wallet-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => openWalletModal(e.currentTarget.dataset.id));
                 });
-
-                // Add data attribute for filtering
-                taskEl.dataset.status = task.completed ? 'completed' : (task.inactive ? 'inactive' : 'active'); // NEW: Status for inactive
-                
-                return taskEl;
-            }
-
-            // Render tasks based on current filter
-            function renderTasks() {
-                taskList.innerHTML = '';
-                
-                if (tasks.length === 0) {
-                    emptyState.classList.remove('hidden');
-                } else {
-                    emptyState.classList.add('hidden');
-                    
-                    const filteredTasks = tasks.filter(task => { // NEW: Filtering logic for inactive
-                        if (currentFilter === 'all') return true;
-                        if (currentFilter === 'completed') return task.completed;
-                        if (currentFilter === 'active') return !task.completed && !task.inactive; // Active = NOT completed AND NOT inactive
-                        if (currentFilter === 'inactive') return task.inactive; // Only inactive tasks
-                        return false;
-                    });
-                    
-                    if (filteredTasks.length === 0) {
-                        const noMatchEl = document.createElement('div');
-                        noMatchEl.classList.add('text-center', 'py-6', 'text-gray-500');
-                        noMatchEl.textContent = `No ${currentFilter} tasks found.`;
-                        taskList.appendChild(noMatchEl);
-                    } else {
-                        filteredTasks.forEach(task => {
-                            taskList.appendChild(createTaskElement(task));
-                        });
-                    }
-                }
-            }
-
-            // Add a new task
-            function addTask() {
-                const text = taskInput.value.trim();
-                const description = taskDescription.value.trim();
-                
-                if (text) {
-                    const newTask = {
-                        id: Date.now(),
-                        text: text,
-                        description: description || null,
-                        completed: false,
-                        inactive: false, // NEW: Default to not inactive
-                        createdAt: new Date(),
-                        image: currentAddTaskImageBase64 // Use the image data
-                    };
-                    
-                    tasks.unshift(newTask); // Add to beginning of array
-                    saveTasks();
-                    renderTasks();
-                    resetTaskForm();
-                }
-            }
-
-            // Toggle task completion status
-            function toggleTask(id) {
-                tasks = tasks.map(task => {
-                    if (task.id === id) {
-                        return { 
-                            ...task, 
-                            completed: !task.completed,
-                            inactive: false // NEW: Completing a task makes it active
-                        };
-                    }
-                    return task;
+                fullWalletList.querySelectorAll('.delete-wallet-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => deleteWallet(e.currentTarget.dataset.id));
                 });
-                
-                saveTasks();
-                renderTasks();
             }
 
-            // NEW: Toggle inactive status
-            function toggleInactive(id) {
-                tasks = tasks.map(task => {
-                    if (task.id === id) {
-                        return { 
-                            ...task, 
-                            inactive: !task.inactive,
-                            completed: false // NEW: Making inactive also makes it not completed
-                        };
-                    }
-                    return task;
+            function populateWalletSelect() {
+                transactionWalletSelect.innerHTML = '';
+                wallets.forEach(wallet => {
+                    const option = document.createElement('option');
+                    option.value = wallet.id;
+                    option.textContent = wallet.name;
+                    transactionWalletSelect.appendChild(option);
                 });
-                saveTasks();
-                renderTasks();
             }
 
-            // Delete a task (same as before)
-            function deleteTask(id) {
-                if (confirm('Are you sure you want to delete this task?')) {
-                    tasks = tasks.filter(task => task.id !== id);
-                    saveTasks();
-                    renderTasks();
-                }
-            }
+            function openWalletModal(id = null) {
+                walletModal.classList.remove('hidden');
+                editingWalletId = id;
+                resetWalletForm();
 
-            // Clear completed tasks (same as before)
-            function clearCompleted() {
-                if (confirm('Are you sure you want to remove all completed tasks?')) {
-                    tasks = tasks.filter(task => !task.completed);
-                    saveTasks();
-                    renderTasks();
-                }
-            }
-
-            // Update task statistics (modified for inactive)
-            function updateStats() {
-                const completed = tasks.filter(task => task.completed).length;
-                const active = tasks.filter(task => !task.completed && !task.inactive).length; // Only truly active tasks
-                const inactive = tasks.filter(task => task.inactive).length; // Count inactive tasks
-                const total = tasks.length;
-                
-                totalTasksEl.textContent = total;
-                activeTasksEl.textContent = active;
-                completedTasksEl.textContent = completed;
-                // No specific element for inactive count, but you could add one if desired.
-            }
-
-            // Format date for display (same as before)
-            function formatDate(date) {
-                const d = new Date(date);
-                const now = new Date();
-                
-                if (d.toDateString() === now.toDateString()) {
-                    return `Today at ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-                }
-                
-                const yesterday = new Date();
-                yesterday.setDate(now.getDate() - 1);
-                if (d.toDateString() === yesterday.toDateString()) {
-                    return 'Yesterday';
-                }
-                
-                return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
-            }
-
-            // Reset the task form (same as before)
-            function resetTaskForm() {
-                taskInput.value = '';
-                taskDescription.value = '';
-                resetImageUpload();
-            }
-
-            // --- Modal Functions (mostly same, minor adjustment for inactive) ---
-            function openTaskModal(id) {
-                currentEditTaskId = id;
-                const task = tasks.find(t => t.id === id);
-                if (!task) return;
-
-                // Set View Mode content
-                viewTaskText.textContent = task.text;
-                viewTaskDescription.innerHTML = task.description ? task.description.replace(/\n/g, '<br>') : 'No description.';
-                if (task.image) {
-                    viewTaskImage.src = task.image;
-                    viewTaskImage.classList.remove('hidden');
+                if (id) {
+                    walletModalTitle.textContent = 'Edit Wallet';
+                    const wallet = wallets.find(w => w.id === id);
+                    if (wallet) {
+                        walletNameInput.value = wallet.name;
+                        walletInitialBalanceInput.value = wallet.balance; // Balance becomes initial balance for edit
+                        walletDescriptionInput.value = wallet.description;
+                    }
                 } else {
-                    viewTaskImage.classList.add('hidden');
-                    viewTaskImage.src = '';
-                }
-                viewTaskCreatedAt.textContent = `Created: ${formatDate(task.createdAt)}`;
-
-                // Set Edit Mode content (hidden by default)
-                editTaskInput.value = task.text;
-                editTaskDescription.value = task.description || '';
-                currentEditTaskImageBase64 = task.image;
-                if (task.image) {
-                    editPreviewImg.src = task.image;
-                    editImagePreview.classList.remove('hidden');
-                } else {
-                    editImagePreview.classList.add('hidden');
-                    editPreviewImg.src = '';
-                }
-                editImageSizeWarning.classList.add('hidden');
-
-                modalTitle.textContent = 'View Task';
-                viewMode.classList.remove('hidden');
-                editMode.classList.add('hidden');
-                editToggleBtn.classList.remove('hidden');
-                saveEditBtn.classList.add('hidden');
-                taskModal.classList.remove('hidden');
-            }
-
-            function closeTaskModal() {
-                taskModal.classList.add('hidden');
-                currentEditTaskId = null;
-                currentAddTaskImageBase64 = null; 
-                currentEditTaskImageBase64 = null; 
-                resetImageUpload(); // Resets both add and edit form image previews
-            }
-
-            function toggleEditMode() {
-                if (editMode.classList.contains('hidden')) {
-                    modalTitle.textContent = 'Edit Task';
-                    viewMode.classList.add('hidden');
-                    editMode.classList.remove('hidden');
-                    editToggleBtn.textContent = 'View';
-                    saveEditBtn.classList.remove('hidden');
-                } else {
-                    modalTitle.textContent = 'View Task';
-                    viewMode.classList.remove('hidden');
-                    editMode.classList.add('hidden');
-                    editToggleBtn.textContent = 'Edit';
-                    saveEditBtn.classList.add('hidden');
+                    walletModalTitle.textContent = 'Add New Wallet';
                 }
             }
 
-            function saveEditedTask() {
-                const editedText = editTaskInput.value.trim();
-                const editedDescription = editTaskDescription.value.trim();
-                
-                if (!editedText) {
-                    alert('Task text cannot be empty!');
+            function closeWalletModal() {
+                walletModal.classList.add('hidden');
+                editingWalletId = null;
+                resetWalletForm();
+            }
+
+            function resetWalletForm() {
+                walletNameInput.value = '';
+                walletInitialBalanceInput.value = '';
+                walletDescriptionInput.value = '';
+            }
+
+            function saveWallet() {
+                const name = walletNameInput.value.trim();
+                const initialBalance = parseFloat(walletInitialBalanceInput.value) || 0;
+                const description = walletDescriptionInput.value.trim();
+
+                if (!name) {
+                    alert('Wallet name cannot be empty.');
                     return;
                 }
 
-                tasks = tasks.map(task => {
-                    if (task.id === currentEditTaskId) {
-                        return { 
-                            ...task, 
-                            text: editedText, 
-                            description: editedDescription || null,
-                            image: currentEditTaskImageBase64 
-                        };
+                if (editingWalletId) {
+                    // Edit existing wallet
+                    wallets = wallets.map(wallet => {
+                        if (wallet.id === editingWalletId) {
+                            // When editing, initialBalance is the new balance. Adjust transactions later if needed.
+                            // For simplicity now, direct set.
+                            return { ...wallet, name, description, balance: initialBalance };
+                        }
+                        return wallet;
+                    });
+                } else {
+                    // Add new wallet
+                    const newWallet = {
+                        id: Date.now().toString(), // Unique ID
+                        name,
+                        description,
+                        balance: initialBalance
+                    };
+                    wallets.push(newWallet);
+                }
+                saveData();
+                renderWallets();
+                populateWalletSelect();
+                closeWalletModal();
+            }
+
+            function deleteWallet(id) {
+                if (id === 'default') {
+                    alert('Default Cash Wallet cannot be deleted.');
+                    return;
+                }
+                if (confirm('Are you sure you want to delete this wallet and all its associated transactions?')) {
+                    wallets = wallets.filter(w => w.id !== id);
+                    transactions = transactions.filter(t => t.walletId !== id); // Delete associated transactions
+                    saveData();
+                    renderWallets();
+                    renderTransactions();
+                    populateWalletSelect();
+                }
+            }
+
+
+            // --- Transaction Functions ---
+            function renderTransactions() {
+                transactionList.innerHTML = '';
+                if (transactions.length === 0) {
+                    emptyTransactionState.classList.remove('hidden');
+                } else {
+                    emptyTransactionState.classList.add('hidden');
+                    // Sort transactions by date, newest first
+                    const sortedTransactions = [...transactions].sort((a, b) => b.date - a.date);
+
+                    sortedTransactions.forEach(trans => {
+                        const wallet = wallets.find(w => w.id === trans.walletId);
+                        const walletName = wallet ? wallet.name : 'Unknown Wallet';
+                        const transEl = document.createElement('div');
+                        transEl.classList.add('transaction-item', trans.type);
+                        transEl.innerHTML = `
+                            <div class="flex-grow">
+                                <p class="text-gray-800 font-medium">${trans.description}</p>
+                                <p class="text-xs text-gray-500">${walletName} - ${formatDate(trans.date)}</p>
+                            </div>
+                            <p class="amount text-lg font-bold">${formatCurrency(trans.amount)}</p>
+                            <button class="ml-4 text-red-500 hover:text-red-700 delete-transaction-btn" data-id="${trans.id}"><i class="fas fa-times-circle"></i></button>
+                        `;
+                        transactionList.appendChild(transEl);
+                    });
+                    
+                    // Add event listeners for delete transaction buttons
+                    transactionList.querySelectorAll('.delete-transaction-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => deleteTransaction(e.currentTarget.dataset.id));
+                    });
+                }
+            }
+
+            function addTransaction() {
+                const amount = parseFloat(transactionAmountInput.value);
+                const description = transactionDescriptionInput.value.trim();
+                const walletId = transactionWalletSelect.value;
+
+                if (isNaN(amount) || amount <= 0) {
+                    alert('Please enter a valid amount.');
+                    return;
+                }
+                if (!description) {
+                    alert('Please enter a description.');
+                    return;
+                }
+                if (!walletId) {
+                    alert('Please select a wallet.');
+                    return;
+                }
+
+                const newTransaction = {
+                    id: Date.now().toString(),
+                    type: currentTransactionType,
+                    amount: amount,
+                    description: description,
+                    walletId: walletId,
+                    date: Date.now() // Timestamp
+                };
+
+                // Update wallet balance
+                const targetWallet = wallets.find(w => w.id === walletId);
+                if (targetWallet) {
+                    if (currentTransactionType === 'income') {
+                        targetWallet.balance += amount;
+                    } else {
+                        targetWallet.balance -= amount;
                     }
-                    return task;
-                });
+                }
+
+                transactions.push(newTransaction);
+                saveData();
+                renderWallets(); // Re-render wallets to show updated balances
+                renderTransactions();
+                resetTransactionForm();
+            }
+
+            function deleteTransaction(id) {
+                if (confirm('Are you sure you want to delete this transaction? This action cannot be undone.')) {
+                    const deletedTransaction = transactions.find(t => t.id === id);
+                    if (deletedTransaction) {
+                        const targetWallet = wallets.find(w => w.id === deletedTransaction.walletId);
+                        if (targetWallet) {
+                            // Revert balance change
+                            if (deletedTransaction.type === 'income') {
+                                targetWallet.balance -= deletedTransaction.amount;
+                            } else {
+                                targetWallet.balance += deletedTransaction.amount;
+                            }
+                        }
+                    }
+                    transactions = transactions.filter(t => t.id !== id);
+                    saveData();
+                    renderWallets();
+                    renderTransactions();
+                }
+            }
+
+            function resetTransactionForm() {
+                transactionAmountInput.value = '';
+                transactionDescriptionInput.value = '';
+                // Keep selected wallet as is or reset to default
+            }
+
+            // --- Summary Functions ---
+            function updateOverallSummary() {
+                let totalIncome = 0;
+                let totalExpense = 0;
                 
-                saveTasks();
-                renderTasks();
-                closeTaskModal();
-            }
-            
-            // --- Image Upload Handling (reverted to original, non-compression) ---
-            const taskImage = document.getElementById('taskImage');
-            const imagePreview = document.getElementById('imagePreview');
-            const previewImg = document.getElementById('previewImg');
-            const removeImageBtn = document.getElementById('removeImageBtn');
-            const imageSizeWarning = document.getElementById('imageSizeWarning');
-            
-            taskImage.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 1024 * 1024) { // 1MB limit for warning
-                        imageSizeWarning.classList.remove('hidden');
+                transactions.forEach(trans => {
+                    if (trans.type === 'income') {
+                        totalIncome += trans.amount;
                     } else {
-                        imageSizeWarning.classList.add('hidden');
+                        totalExpense += trans.amount;
                     }
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        previewImg.src = event.target.result;
-                        imagePreview.classList.remove('hidden');
-                        currentAddTaskImageBase64 = event.target.result; // Store base64 data
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            removeImageBtn.addEventListener('click', function() {
-                resetImageUpload();
-            });
-            // This function handles resetting the main add task image input/preview
-            function resetImageUpload() {
-                taskImage.value = '';
-                previewImg.src = '';
-                imagePreview.classList.add('hidden');
-                imageSizeWarning.classList.add('hidden');
-                currentAddTaskImageBase64 = null;
+                });
+
+                let netBalance = 0;
+                wallets.forEach(wallet => {
+                    netBalance += wallet.balance;
+                });
+
+                totalIncomeEl.textContent = formatCurrency(totalIncome);
+                totalExpenseEl.textContent = formatCurrency(totalExpense);
+                netBalanceEl.textContent = formatCurrency(netBalance);
             }
 
-            // --- Image Upload Handling (for Edit Task Modal, reverted to original) ---
-            const editTaskImage = document.getElementById('editTaskImage');
-            const editImagePreview = document.getElementById('editImagePreview');
-            const editPreviewImg = document.getElementById('editPreviewImg');
-            const editRemoveImageBtn = document.getElementById('editRemoveImageBtn');
-            const editImageSizeWarning = document.getElementById('editImageSizeWarning');
-
-            editTaskImage.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 1024 * 1024) { // 1MB limit for warning
-                        editImageSizeWarning.classList.remove('hidden');
-                    } else {
-                        editImageSizeWarning.classList.add('hidden');
-                    }
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        editPreviewImg.src = event.target.result;
-                        editImagePreview.classList.remove('hidden');
-                        currentEditTaskImageBase64 = event.target.result; // Store base64 data
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            editRemoveImageBtn.addEventListener('click', function() {
-                resetEditImageUpload();
-            });
-            // This function handles resetting the edit modal image input/preview
-            function resetEditImageUpload() {
-                editTaskImage.value = '';
-                editPreviewImg.src = '';
-                editImagePreview.classList.add('hidden');
-                editImageSizeWarning.classList.add('hidden');
-                currentEditTaskImageBase64 = null;
+            // --- Utility Functions ---
+            function formatCurrency(amount) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0, // No decimals for whole Rupiah
+                    maximumFractionDigits: 0
+                }).format(amount);
             }
 
+            function formatDate(timestamp) {
+                const d = new Date(timestamp);
+                return d.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
 
             // --- Event Listeners ---
-            addTaskBtn.addEventListener('click', addTask);
-            
-            taskInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    addTask();
+            addWalletBtn.addEventListener('click', () => openWalletModal());
+            cancelWalletModalBtn.addEventListener('click', closeWalletModal);
+            saveWalletBtn.addEventListener('click', saveWallet);
+            walletModal.addEventListener('click', function(event) {
+                if (event.target === walletModal) {
+                    closeWalletModal();
                 }
             });
-            
-            clearCompletedBtn.addEventListener('click', clearCompleted);
-            
-            categoryPills.forEach(pill => {
-                pill.addEventListener('click', function() {
-                    categoryPills.forEach(p => p.classList.remove('active'));
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
                     this.classList.add('active');
-                    currentFilter = this.dataset.filter;
-                    renderTasks();
+                    const tab = this.dataset.tab;
+                    if (tab === 'transactions') {
+                        transactionsSection.classList.remove('hidden');
+                        walletsSection.classList.add('hidden');
+                    } else {
+                        transactionsSection.classList.add('hidden');
+                        walletsSection.classList.remove('hidden');
+                    }
                 });
             });
 
-            cancelModalBtn.addEventListener('click', closeTaskModal);
-            editToggleBtn.addEventListener('click', toggleEditMode);
-            saveEditBtn.addEventListener('click', saveEditedTask);
-            taskModal.addEventListener('click', function(event) {
-                if (event.target === taskModal) { // Close if clicked outside content
-                    closeTaskModal();
-                }
+            incomeTypeBtn.addEventListener('click', function() {
+                currentTransactionType = 'income';
+                incomeTypeBtn.classList.add('active');
+                expenseTypeBtn.classList.remove('active');
             });
+            expenseTypeBtn.addEventListener('click', function() {
+                currentTransactionType = 'expense';
+                expenseTypeBtn.classList.add('active');
+                incomeTypeBtn.classList.remove('active');
+            });
+            addTransactionBtn.addEventListener('click', addTransaction);
 
             // Show/hide floating home button on scroll
             window.addEventListener('scroll', function() {
@@ -702,7 +621,7 @@
             });
 
             // Initialize app
-            loadTasks();
+            loadData();
         });
     </script>
 </body>
